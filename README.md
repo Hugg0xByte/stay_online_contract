@@ -1,5 +1,3 @@
-# stay_online_contract -- Gui de estudo
-
 # Fluxo de Testes Locais — Contrato Soroban (com pausa/retomada)
 
 > Este guia mostra **como testar tudo local**, em duas camadas:
@@ -670,4 +668,47 @@ Consultar transaction
 ```bash
 #consulta transação
 curl "https://horizon-testnet.stellar.org/transactions/fad340b5a62535a394d7ff4fbb4b42f0aa7ef8d1730ea2c1b4735e5b60ecb5ca/effects"
+```
+
+
+## 7) Criar assinatura em etapas, compra, depois assinatura do XDR
+
+### Gerar XDR
+Porque usar esse fluxo?
+Estamos simulando um ambiente real, onde o cliente entra pelo FRONT, aciona a API de compra via back end, que vai montar o XDR com a simulação de compra para o cliente. Exemplo abaixo:
+
+```bash
+# 
+echo "=== BACKEND: Preparando transação ==="
+UNSIGNED_XDR=$(stellar contract invoke \
+  --id $CONTRACT_ID \
+  --source-account maria \
+  --network testnet \
+  --build-only \
+  -- buy_order \
+  --owner $MARIA_ADDRESS \
+  --package_id 1)
+
+```
+
+resultado:
+```bash
+echo "XDR não assinado: $UNSIGNED_XDR"
+=== BACKEND: Preparando transação ===
+XDR não assinado: AAAAAgAAAABhdPXUol3B4TzeZ/KWnGs5OBgnWRvzd7uyHwZNvF353AAAAGQABYIBAAAABwAAAAAAAAAAAAAAAQAAAAAAAAAYAAAAAAAAAAFik/Y2zxMOjHh0K/FSgXxgioEtT18PymZwKwGLnPi28AAAAAlidXlfb3JkZXIAAAAAAAACAAAAEgAAAAAAAAAAYXT11KJdweE83mfylpxrOTgYJ1kb83e7sh8GTbxd+dwAAAADAAAAAQAAAAAAAAAAAAAAAA==
+```
+
+### Simular Wallat(assinar XDR)
+
+Nessa etapa, o cliente vai usar a wallet para assinar o XDR, que foi gerado no back end.
+```bash
+
+echo "=== FRONTEND: Simulando (footprint + fees) ==="
+PREPARED_XDR=$(echo "$UNSIGNED_XDR" | stellar tx simulate --source-account maria)
+
+echo "=== WALLET: Assinando ==="
+SIGNED_XDR=$(echo "$PREPARED_XDR" | stellar tx sign --sign-with-key maria)
+
+echo "=== BLOCKCHAIN: Submetendo ==="
+echo "$SIGNED_XDR" | stellar tx send
 ```
