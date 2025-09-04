@@ -1,13 +1,14 @@
 use soroban_sdk::{contracttype, contracterror, Address};
+
 // -------------------------------------------------------------
 // MODELO DE DADOS
 // -------------------------------------------------------------
 
-/// Um "pacote" de internet: preço (em XLM) e duração (em segundos).
+/// Um "pacote" de internet: preço (em unidades do token, ex.: XLM/SAC) e duração (segundos).
 #[derive(Clone)]
 #[contracttype]
 pub struct Package {
-    pub price: i128,     // preço em unidades do token "XML"
+    pub price: i128,         // preço em unidades do token (ex.: stroops se for XLM/SAC)
     pub duration_secs: u32,  // duração total concedida ao comprar este pacote
 }
 
@@ -30,15 +31,27 @@ pub struct Access {
     pub expires_at: u64, // se pausado, 0; se ativo, started_at + remaining_secs
 }
 
+/// Registro de ordem de compra (paga on-chain, mas ainda não creditada).
+/// Usado para separar COMPRA (buy_order) do CRÉDITO (grant) com idempotência.
+#[derive(Clone)]
+#[contracttype]
+pub struct OrderRec {
+    pub package_id: u32, // pacote comprado
+    pub credited: bool,  // se os segundos já foram creditados na sessão
+}
+
 /// Chaves de armazenamento:
 /// - Instance storage: Admin/Token/Package -> configuração global do contrato
-/// - Persistent storage: Session(owner)     -> estado por usuário (vida longa)
+/// - Persistent storage:
+///     - Session(owner)            -> estado por usuário (vida longa)
+///     - Order(owner, order_id)    -> ordem paga, pendente ou já creditada
 #[contracttype]
 pub enum DataKey {
-    Admin,               // Address do administrador do catálogo
-    Token,               // Address do contrato do token (SAC) do "XLM"
-    Package(u32),        // id -> Package
-    Session(Address),    // owner -> Session
+    Admin,                    // Address do administrador do catálogo
+    Token,                    // Address do contrato do token (SAC) usado na cobrança
+    Package(u32),             // id -> Package
+    Session(Address),         // owner -> Session
+    Order(Address, u128),     // (owner, order_id) -> OrderRec
 }
 
 // -------------------------------------------------------------
@@ -52,4 +65,8 @@ pub enum Error {
     Unauthorized = 3,
     PackageNotFound = 4,
     InsufficientBalance = 5,
+
+    // novos para o fluxo buy_order + grant
+    OrderNotFound = 6,   // ordem não existe (ex.: order_id inválido)
+    AlreadyGranted = 7,  // ordem já foi creditada (idempotência no grant)
 }
