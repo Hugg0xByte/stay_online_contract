@@ -9,7 +9,7 @@ use soroban_sdk::{
 // TIPOS AUXILIARES (somente neste arquivo)
 // -------------------------------------------------------------
 
-// storage helpers p/ OrderRec
+// storage helpers p/ OrderRec (persistent)
 fn load_order(env: &Env, owner: &Address, order_id: u128) -> Option<OrderRec> {
     env.storage()
         .persistent()
@@ -19,6 +19,15 @@ fn save_order(env: &Env, owner: &Address, order_id: u128, rec: &OrderRec) {
     env.storage()
         .persistent()
         .set(&DataKey::Order(owner.clone(), order_id), rec);
+}
+
+// helper p/ contador determinístico (instance): NextOrder(owner) -> u128
+fn next_order_id(env: &Env, owner: &Address) -> u128 {
+    let key = DataKey::NextOrder(owner.clone());
+    let current: u128 = env.storage().instance().get(&key).unwrap_or(0);
+    let next = current + 1;
+    env.storage().instance().set(&key, &next);
+    next
 }
 
 // -------------------------------------------------------------
@@ -163,9 +172,9 @@ impl AccessTime {
 
         Self::dbg(&env, "after_transfer");
 
-        //let order_id: u128 = env.ledger().timestamp() as u128;
-        let order_id: u128 =
-            env.ledger().sequence() as u128 * 1000000 + env.ledger().timestamp() as u128;
+        // >>>>> ALTERAÇÃO: gerar order_id determinístico pelo contador <<<<<
+        let order_id: u128 = next_order_id(&env, &owner);
+
         save_order(
             &env,
             &owner,

@@ -371,3 +371,63 @@ fn test_minimal_buy_order() {
     let order_id = client.buy_order(&user, &2u32);
     assert!(order_id > 0, "order_id was {}", order_id);
 }
+
+#[test]
+fn test_order_id_monotonic_per_owner() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let user = Address::generate(&env);
+
+    let token_id = env
+        .register_stellar_asset_contract_v2(admin.clone())
+        .address();
+    let contract_id = env.register(AccessTime, ());
+    let client = AccessTimeClient::new(&env, &contract_id);
+
+    client.init(&admin, &token_id);
+    client.set_package(&1u32, &10_i128, &3600u32);
+
+    let token_admin = StellarAssetClient::new(&env, &token_id);
+    token_admin.mint(&user, &1000_i128);
+
+    let id1 = client.buy_order(&user, &1u32);
+    let id2 = client.buy_order(&user, &1u32);
+    let id3 = client.buy_order(&user, &1u32);
+
+    assert_eq!(id1 + 1, id2);
+    assert_eq!(id2 + 1, id3);
+    assert!(id1 >= 1);
+}
+
+#[test]
+fn test_order_id_isolation_between_owners() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let alice = Address::generate(&env);
+    let bob = Address::generate(&env);
+
+    let token_id = env
+        .register_stellar_asset_contract_v2(admin.clone())
+        .address();
+    let contract_id = env.register(AccessTime, ());
+    let client = AccessTimeClient::new(&env, &contract_id);
+
+    client.init(&admin, &token_id);
+    client.set_package(&1u32, &10_i128, &3600u32);
+
+    let token_admin = StellarAssetClient::new(&env, &token_id);
+    token_admin.mint(&alice, &1000_i128);
+    token_admin.mint(&bob, &1000_i128);
+
+    let a1 = client.buy_order(&alice, &1u32); // deve ser 1 para a Alice
+    let b1 = client.buy_order(&bob, &1u32); // deve ser 1 para o Bob
+    let a2 = client.buy_order(&alice, &1u32); // deve ser 2 para a Alice
+
+    assert_eq!(a1, 1);
+    assert_eq!(b1, 1);
+    assert_eq!(a2, 2);
+}

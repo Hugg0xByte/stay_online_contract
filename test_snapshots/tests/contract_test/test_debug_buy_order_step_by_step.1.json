@@ -311,12 +311,12 @@
                 {
                   "u128": {
                     "hi": 0,
-                    "lo": 1000000
+                    "lo": 1
                   }
                 }
               ]
             },
-            "durability": "temporary"
+            "durability": "persistent"
           }
         },
         [
@@ -337,12 +337,12 @@
                     {
                       "u128": {
                         "hi": 0,
-                        "lo": 1000000
+                        "lo": 1
                       }
                     }
                   ]
                 },
-                "durability": "temporary",
+                "durability": "persistent",
                 "val": {
                   "map": [
                     {
@@ -367,7 +367,7 @@
             },
             "ext": "v0"
           },
-          15
+          4095
         ]
       ],
       [
@@ -403,6 +403,24 @@
                         },
                         "val": {
                           "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
+                        }
+                      },
+                      {
+                        "key": {
+                          "vec": [
+                            {
+                              "symbol": "NextOrder"
+                            },
+                            {
+                              "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4"
+                            }
+                          ]
+                        },
+                        "val": {
+                          "u128": {
+                            "hi": 0,
+                            "lo": 1
+                          }
                         }
                       },
                       {
@@ -865,7 +883,7 @@
                 {
                   "u128": {
                     "hi": 0,
-                    "lo": 1000000
+                    "lo": 1
                   }
                 },
                 {

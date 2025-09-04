@@ -1,4 +1,4 @@
-use soroban_sdk::{contracttype, contracterror, Address};
+use soroban_sdk::{contracterror, contracttype, Address};
 
 // -------------------------------------------------------------
 // MODELO DE DADOS
@@ -8,8 +8,8 @@ use soroban_sdk::{contracttype, contracterror, Address};
 #[derive(Clone)]
 #[contracttype]
 pub struct Package {
-    pub price: i128,         // preço em unidades do token (ex.: stroops se for XLM/SAC)
-    pub duration_secs: u32,  // duração total concedida ao comprar este pacote
+    pub price: i128,        // preço em unidades do token (ex.: stroops se for XLM/SAC)
+    pub duration_secs: u32, // duração total concedida ao comprar este pacote
 }
 
 /// Estado de sessão com "saldo de segundos" e marcador de início:
@@ -41,17 +41,20 @@ pub struct OrderRec {
 }
 
 /// Chaves de armazenamento:
-/// - Instance storage: Admin/Token/Package -> configuração global do contrato
+/// - Instance storage: Admin / Token / Package / NextOrder
+///   (config/global + contador determinístico por dono)
 /// - Persistent storage:
 ///     - Session(owner)            -> estado por usuário (vida longa)
 ///     - Order(owner, order_id)    -> ordem paga, pendente ou já creditada
 #[contracttype]
 pub enum DataKey {
-    Admin,                    // Address do administrador do catálogo
-    Token,                    // Address do contrato do token (SAC) usado na cobrança
-    Package(u32),             // id -> Package
-    Session(Address),         // owner -> Session
-    Order(Address, u128),     // (owner, order_id) -> OrderRec
+    Admin,        // Address do administrador do catálogo
+    Token,        // Address do contrato do token (SAC) usado na cobrança
+    Package(u32), // id -> Package
+    // NOVO: contador sequencial por dono para gerar order_id determinístico
+    NextOrder(Address),   // owner -> u128 (próximo order_id disponível)
+    Session(Address),     // owner -> Session
+    Order(Address, u128), // (owner, order_id) -> OrderRec
 }
 
 // -------------------------------------------------------------
@@ -67,6 +70,6 @@ pub enum Error {
     InsufficientBalance = 5,
 
     // novos para o fluxo buy_order + grant
-    OrderNotFound = 6,   // ordem não existe (ex.: order_id inválido)
-    AlreadyGranted = 7,  // ordem já foi creditada (idempotência no grant)
+    OrderNotFound = 6,  // ordem não existe (ex.: order_id inválido)
+    AlreadyGranted = 7, // ordem já foi creditada (idempotência no grant)
 }
