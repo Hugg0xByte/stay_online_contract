@@ -1,3 +1,5 @@
+# stay_online_contract -- Gui de estudo
+
 # Fluxo de Testes Locais — Contrato Soroban (com pausa/retomada)
 
 > Este guia mostra **como testar tudo local**, em duas camadas:
